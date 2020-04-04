@@ -1,9 +1,21 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
+const User = require('../models/user');
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.put('/:user_id/category', async (req, res, next) => {
+  const { user_id } = req.params;
+  const { category } = req.body;
+
+  try {
+    await User.findOneAndUpdate(
+      { email: user_id },
+      { choosen_category: category },
+      { upsert: true }
+    )
+    res.status(200)
+  } catch (error) {
+    console.log('^^')
+  }
 });
 
 module.exports = router;

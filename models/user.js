@@ -19,7 +19,8 @@ const userSchema = mongoose.Schema({
     },
     choosen_category: [
         {
-            type: String
+            type: Schema.ObjectId,
+            ref: 'Category'
         }
     ],
     library: [
@@ -33,10 +34,7 @@ const userSchema = mongoose.Schema({
             type: Schema.ObjectId,
             ref: 'BookReport'
         }
-    ],
-    refresh_token : {
-        
-    }
+    ]
 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const bookReportSchema = mongoose.Schema({
     image_url: String,
-    report: String,
+    text: String,
     author: {
         type: Schema.ObjectId,
         ref: 'User'
@@ -18,19 +18,21 @@ const bookReportSchema = mongoose.Schema({
             required: true
         },
         category: {
-            type: String,
-            required: true
+            type: Schema.ObjectId,
+            ref: 'Category'
         }
     },
-    report_title: {
+    title: {
         type: String,
         required: true
     },
     quote: String,
-    comments: {
-        type: Schema.ObjectId,
-        ref: 'Comment'
-    }
+    comments: [
+        {
+            type: Schema.ObjectId,
+            ref: 'Comment'
+        }
+    ]
 });
 
 module.exports = mongoose.model('BookReport', bookReportSchema);
