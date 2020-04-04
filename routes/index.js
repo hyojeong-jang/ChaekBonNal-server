@@ -10,7 +10,7 @@ router.post('/login', async (req, res) => {
         const userData = await User.findOneAndUpdate(
             { email },
             { imageUrl, name, email },
-            { upsert: true }
+            { upsert: true, new: true }
         );
 
         const token = jwt.sign(

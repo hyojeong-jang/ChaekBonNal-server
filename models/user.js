@@ -20,7 +20,8 @@ const userSchema = mongoose.Schema({
     choosen_category: [
         {
             type: Schema.ObjectId,
-            ref: 'Category'
+            ref: 'Category',
+            default: []
         }
     ],
     library: [
