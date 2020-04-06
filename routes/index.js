@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const BookReport = require('../models/bookReport');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 
@@ -25,7 +26,9 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.get('/', (req, res, next) => {
+router.get('/non-member/book-reports', async (req, res) => {
+    const bookReports = await BookReport.find();
+    res.status(200).json({ bookReports });
 });
 
 module.exports = router;

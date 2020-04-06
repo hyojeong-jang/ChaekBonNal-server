@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
+
 const User = require('../models/user');
 const Category = require('../models/category');
 const BookReport = require('../models/bookReport');
+
 const axios = require('axios').default;
+const jwt = require('jsonwebtoken');
+
 
 const getCategory = (kdc) => {
   if (kdc === 0) return '총류';
@@ -84,6 +88,30 @@ router.post('/:user_id/book-report', async (req, res) => {
       category: selectedCategory
     }
   })
+  res.status(200).json({ result: 'ok' })
+})
+
+router.get('/:user_token/book-reports', async (req, res) => {
+  const { user_token } = req.params;
+  const { email } = jwt.verify(user_token, process.env.SECRET_KEY);
+
+  const allBookReports = await BookReport.find({});
+
+  const { choosen_category } = await User.findOne({ email },'choosen_category');
+  const userSelectedCategory = await Category.find({ _id: choosen_category[0] });
+
+  const temp = userSelectedCategory[0].name;
+  const bookReports = [];
+
+  allBookReports.forEach(el => {
+    temp.forEach(selected => {
+      if (String(el.book_info.category) === String(selected)) {
+        bookReports.push(el);
+      }
+    })
+  })
+
+  res.status(200).json({ bookReports });
 })
 
 module.exports = router;
