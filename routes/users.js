@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const Category = require('../models/category');
+const BookReport = require('../models/bookReport');
 const axios = require('axios').default;
 
 const getCategory = (kdc) => {
@@ -65,6 +66,24 @@ router.get('/:user_id/writing/isbn-search/:isbn', async (req, res) => {
   const isbnCategoryCode = Number(bookData.data.docs[0].EA_ADD_CODE.slice(2, 3));
   
   res.status(200).json({result: getCategory(isbnCategoryCode)});
+})
+
+router.post('/:user_id/book-report', async (req, res) => {
+  const { selectedBook, selectedCategory, text, title, quote  } = req.body.data;
+  const { user_id } = req.params;
+  const author = await User.findOne({ name: user_id }, '_id');
+ 
+  await BookReport.create({
+    author: author._id,
+    title,
+    quote,
+    text,
+    book_info: {
+      title: selectedBook.title,
+      author: selectedBook.author,
+      category: selectedCategory
+    }
+  })
 })
 
 module.exports = router;

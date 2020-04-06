@@ -18,8 +18,8 @@ const bookReportSchema = mongoose.Schema({
             required: true
         },
         category: {
-            type: Schema.ObjectId,
-            ref: 'Category'
+            type: String,
+            required: true
         }
     },
     title: {
