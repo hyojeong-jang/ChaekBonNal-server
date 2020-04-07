@@ -7,21 +7,20 @@ const BookReport = require('../models/bookReport');
 
 const axios = require('axios').default;
 const jwt = require('jsonwebtoken');
+const s3 = require('../config/S3');
 
-
-const getCategory = (kdc) => {
-  if (kdc === 0) return '총류';
-  if (kdc === 1) return '철학';
-  if (kdc === 2) return '종교';
-  if (kdc === 3) return '사회과학';
-  if (kdc === 4) return '자연과학';
-  if (kdc === 5) return '기술과학';
-  if (kdc === 6) return '예술';
-  if (kdc === 7) return '언어';
-  if (kdc === 8) return '문학';
-  if (kdc === 9) return '역사';
-}
-
+const KDC = {
+  0: '총류',
+  1: '철학',
+  2: '종교',
+  3: '사회과학',
+  4: '자연과학',
+  5: '기술과학',
+  6: '예술',
+  7: '언어',
+  8: '문학',
+  9: '역사'
+};
 
 router.put('/:user_id/category', async (req, res) => {
   const { user_id } = req.params;
@@ -68,17 +67,18 @@ router.get('/:user_id/writing/isbn-search/:isbn', async (req, res) => {
   const isbn13 = isbn.slice(11,24)
   const bookData = await axios.get(process.env.NATIONAL_LIBRARY_OF_KOREA_URL+isbn13)
   const isbnCategoryCode = Number(bookData.data.docs[0].EA_ADD_CODE.slice(2, 3));
-  
-  res.status(200).json({result: getCategory(isbnCategoryCode)});
+
+  res.status(200).json({ result: KDC[isbnCategoryCode] });
 })
 
 router.post('/:user_id/book-report', async (req, res) => {
-  const { selectedBook, selectedCategory, text, title, quote  } = req.body.data;
+  const { selectedBook, selectedCategory, imageUrl, text, title, quote  } = req.body.data;
   const { user_id } = req.params;
   const author = await User.findOne({ name: user_id }, '_id');
  
   await BookReport.create({
     author: author._id,
+    image_url: imageUrl,
     title,
     quote,
     text,
@@ -91,9 +91,11 @@ router.post('/:user_id/book-report', async (req, res) => {
   res.status(200).json({ result: 'ok' })
 })
 
+
 router.get('/:user_token/book-reports', async (req, res) => {
   const { user_token } = req.params;
   const { email } = jwt.verify(user_token, process.env.SECRET_KEY);
+
 
   const allBookReports = await BookReport.find({});
 
@@ -112,6 +114,29 @@ router.get('/:user_token/book-reports', async (req, res) => {
   })
 
   res.status(200).json({ bookReports });
+})
+
+router.post('/:user_token/writing/attaching-image', async (req, res) => {
+  const { user_token } = req.params;
+  const { url } = req.body.data;
+  const { email } = jwt.verify(user_token, process.env.SECRET_KEY);
+
+  const params = {
+    Bucket: 'chaekbonnal',
+    Key: `bookImage/${email}_${Date.now().toString()}`,
+    ACL: 'public-read',
+    Body: url,
+    ContentEncoding: 'base64',
+  }
+
+  s3.upload(params, (err, data) => {
+    if (err) {
+      console.log(err, 'S3 ERROR')
+    } else {
+      const imageUrl = data.Location;
+      res.status(200).json({ imageUrl })
+    }
+  })
 })
 
 module.exports = router;
