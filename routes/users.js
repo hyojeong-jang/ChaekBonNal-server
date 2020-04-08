@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-
+const fs = require('fs');
 const User = require('../models/user');
 const Category = require('../models/category');
 const BookReport = require('../models/bookReport');
@@ -8,6 +8,8 @@ const BookReport = require('../models/bookReport');
 const axios = require('axios').default;
 const jwt = require('jsonwebtoken');
 const s3 = require('../config/S3');
+const multer  = require('multer');
+const upload = multer();
 
 const KDC = {
   0: '총류',
@@ -102,12 +104,12 @@ router.get('/:user_token/book-reports', async (req, res) => {
   const { choosen_category } = await User.findOne({ email },'choosen_category');
   const userSelectedCategory = await Category.find({ _id: choosen_category[0] });
 
-  const temp = userSelectedCategory[0].name;
+  const selectedCategory = userSelectedCategory[0].name;
   const bookReports = [];
 
   allBookReports.forEach(el => {
-    temp.forEach(selected => {
-      if (String(el.book_info.category) === String(selected)) {
+    selectedCategory.forEach(category => {
+      if (el.book_info.category === category) {
         bookReports.push(el);
       }
     })
@@ -118,18 +120,19 @@ router.get('/:user_token/book-reports', async (req, res) => {
 
 router.post('/:user_token/writing/attaching-image', async (req, res) => {
   const { user_token } = req.params;
-  const { url } = req.body.data;
+  const { url } = req.body.data
   const { email } = jwt.verify(user_token, process.env.SECRET_KEY);
-
+  const type = 'jpg';
   const params = {
     Bucket: 'chaekbonnal',
     Key: `bookImage/${email}_${Date.now().toString()}`,
     ACL: 'public-read',
-    Body: url,
+    Body: `${url}`,
     ContentEncoding: 'base64',
+    ContentType: `image/${type}`
   }
 
-  s3.upload(params, (err, data) => {
+  s3.putObject(params, (err, data) => {
     if (err) {
       console.log(err, 'S3 ERROR')
     } else {
