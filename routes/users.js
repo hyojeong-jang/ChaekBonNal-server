@@ -1,15 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
 const User = require('../models/user');
 const Category = require('../models/category');
 const BookReport = require('../models/bookReport');
+const { authorization } = require('../middlewares/authorization');
 
 const axios = require('axios').default;
-const jwt = require('jsonwebtoken');
+// const jwt = require('jsonwebtoken');
 const s3 = require('../config/S3');
 const multer  = require('multer');
-const upload = multer();
+const multerS3 = require('multer-s3');
+const upload = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: 'chaekbonnal',
+    acl: 'public-read',
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+      cb(null, `bookImage/${Date.now().toString()}.jpg`)
+    }
+  })
+});
 
 const KDC = {
   0: '총류',
@@ -23,6 +36,17 @@ const KDC = {
   8: '문학',
   9: '역사'
 };
+
+router.get('/:user_id', authorization, async (req, res) => {
+  const { email } = res.locals;
+  try {
+    const userData = await User.findOne({ email });
+   
+    res.status(200).json({ userData });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+})
 
 router.put('/:user_id/category', async (req, res) => {
   const { user_id } = req.params;
@@ -66,12 +90,12 @@ router.get('/:user_id/writing/book-search/:search_word', async (req, res) => {
 
 router.get('/:user_id/writing/isbn-search/:isbn', async (req, res) => {
   const { isbn } = req.params;
-  const isbn13 = isbn.slice(11,24)
-  const bookData = await axios.get(process.env.NATIONAL_LIBRARY_OF_KOREA_URL+isbn13)
+  const isbn13 = isbn.slice(11,24);
+  const bookData = await axios.get(process.env.NATIONAL_LIBRARY_OF_KOREA_URL + isbn13);
   const isbnCategoryCode = Number(bookData.data.docs[0].EA_ADD_CODE.slice(2, 3));
 
   res.status(200).json({ result: KDC[isbnCategoryCode] });
-})
+});
 
 router.post('/:user_id/book-report', async (req, res) => {
   const { selectedBook, selectedCategory, imageUrl, text, title, quote  } = req.body.data;
@@ -89,18 +113,15 @@ router.post('/:user_id/book-report', async (req, res) => {
       author: selectedBook.author,
       category: selectedCategory
     }
-  })
-  res.status(200).json({ result: 'ok' })
-})
+  });
+  res.status(200).json({ result: 'ok' });
+});
 
 
-router.get('/:user_token/book-reports', async (req, res) => {
-  const { user_token } = req.params;
-  const { email } = jwt.verify(user_token, process.env.SECRET_KEY);
-
+router.get('/:user_id/book-reports', authorization, async (req, res) => {
+  const { email } = res.locals;
 
   const allBookReports = await BookReport.find({});
-
   const { choosen_category } = await User.findOne({ email },'choosen_category');
   const userSelectedCategory = await Category.find({ _id: choosen_category[0] });
 
@@ -112,34 +133,14 @@ router.get('/:user_token/book-reports', async (req, res) => {
       if (el.book_info.category === category) {
         bookReports.push(el);
       }
-    })
-  })
+    });
+  });
 
   res.status(200).json({ bookReports });
-})
+});
 
-router.post('/:user_token/writing/attaching-image', async (req, res) => {
-  const { user_token } = req.params;
-  const { url } = req.body.data
-  const { email } = jwt.verify(user_token, process.env.SECRET_KEY);
-  const type = 'jpg';
-  const params = {
-    Bucket: 'chaekbonnal',
-    Key: `bookImage/${email}_${Date.now().toString()}`,
-    ACL: 'public-read',
-    Body: `${url}`,
-    ContentEncoding: 'base64',
-    ContentType: `image/${type}`
-  }
-
-  s3.putObject(params, (err, data) => {
-    if (err) {
-      console.log(err, 'S3 ERROR')
-    } else {
-      const imageUrl = data.Location;
-      res.status(200).json({ imageUrl })
-    }
-  })
-})
+router.post('/:user_token/writing/attaching-image', upload.single('photo'), async (req, res) => {
+  res.json({ success: true, imageUrl: req.file.location });
+});
 
 module.exports = router;

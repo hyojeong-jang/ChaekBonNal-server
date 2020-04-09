@@ -10,6 +10,7 @@ const cors = require('cors');
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const bookReportsRouter = require('./routes/bookReports');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/book-reports', bookReportsRouter);
 
 app.use(function(req, res, next) {
   next(createError(404));
