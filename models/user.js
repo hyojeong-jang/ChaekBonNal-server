@@ -24,12 +24,6 @@ const userSchema = mongoose.Schema({
             default: []
         }
     ],
-    library: [
-        {
-            type: Schema.ObjectId,
-            ref: 'BookReport'
-        }
-    ],
     bookmarks:  [
         {
             type: Schema.ObjectId,

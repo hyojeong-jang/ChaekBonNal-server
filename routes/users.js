@@ -48,17 +48,41 @@ router.get('/:user_id', authorization, async (req, res) => {
   }
 })
 
+router.get('/:user_id/library', authorization, async (req, res) => {
+  const { email } = res.locals;
+  try {
+    const { _id } = await User.findOne({ email }, '_id')
+    const userLibrary = await BookReport.find({ author: _id });
+
+    res.status(200).json({ userLibrary });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+})
+
+router.get('/:user_id/bookmarks', authorization, async (req, res) => {
+  const { email } = res.locals;
+  try {
+    const { bookmarks } = await User.findOne({ email }, 'bookmarks');
+    const userBookmarks = await BookReport.find({ '_id': { $in: bookmarks } });
+
+    res.status(200).json({ userBookmarks });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+})
+
 router.put('/:user_id/category', async (req, res) => {
   const { user_id } = req.params;
   const { category } = req.body;
   const result = category.join(',');
 
   try {
-    const choosenCategory = await Category.create({ name: category });
+    const { _id } = await Category.create({ name: category });
   
     await User.findOneAndUpdate(
       { name: user_id },
-      { choosen_category: choosenCategory._id },
+      { choosen_category: _id },
       { upsert: true, new: true }
     )
   
@@ -100,10 +124,10 @@ router.get('/:user_id/writing/isbn-search/:isbn', async (req, res) => {
 router.post('/:user_id/book-report', async (req, res) => {
   const { selectedBook, selectedCategory, imageUrl, text, title, quote  } = req.body.data;
   const { user_id } = req.params;
-  const author = await User.findOne({ name: user_id }, '_id');
+  const { _id } = await User.findOne({ name: user_id }, '_id');
  
   await BookReport.create({
-    author: author._id,
+    author: _id,
     image_url: imageUrl,
     title,
     quote,
