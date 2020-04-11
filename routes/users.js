@@ -6,7 +6,6 @@ const BookReport = require('../models/bookReport');
 const { authorization } = require('../middlewares/authorization');
 
 const axios = require('axios').default;
-// const jwt = require('jsonwebtoken');
 const s3 = require('../config/S3');
 const multer  = require('multer');
 const multerS3 = require('multer-s3');
@@ -90,6 +89,14 @@ router.put('/:user_id/category', async (req, res) => {
   } catch (error) {
     console.log(error);
   }
+});
+
+router.delete('/:user_id/writing', authorization, async (req, res) => {
+  const { email } = res.locals;
+  const { _id } = await User.findOne({ email });
+
+  await BookReport.findOneAndDelete({ author: _id });
+  res.status(200).json({ success: true });
 });
 
 router.get('/:user_id/writing/book-search/:search_word', async (req, res) => {

@@ -10,11 +10,13 @@ router.get('/:report_id', async (req, res) => {
 
     try {
         const bookReport = await BookReport.findById(report_id);
+        const author = await User.findById(bookReport.author);
         const comments = await Comment.find({ '_id': { $in: bookReport.comments } }).populate('author');
 
         res.status(200).json({ 
             bookReport,
-            comments
+            comments,
+            author
         });
     } catch (error) {
         res.status(400).json({ success: false })
