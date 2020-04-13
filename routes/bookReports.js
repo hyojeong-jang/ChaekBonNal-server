@@ -13,7 +13,7 @@ router.get('/:report_id', async (req, res) => {
         const author = await User.findById(bookReport.author);
         const comments = await Comment.find({ '_id': { $in: bookReport.comments } }).populate('author');
 
-        res.status(200).json({ 
+        res.status(200).json({
             bookReport,
             comments,
             author
@@ -41,7 +41,7 @@ router.put('/:report_id/users/:user_id/bookmark', authorization, async (req, res
                 { email },
                 { $pull: { bookmarks: report_id } },
             )
- 
+
             res.status(200).json({ isBookmarked: false });
         }
     } catch (error) {

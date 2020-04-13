@@ -40,7 +40,7 @@ router.get('/:user_id', authorization, async (req, res) => {
   const { email } = res.locals;
   try {
     const userData = await User.findOne({ email });
-   
+
     res.status(200).json({ userData });
   } catch (error) {
     res.status(500).json({ success: false });
@@ -78,13 +78,13 @@ router.put('/:user_id/category', async (req, res) => {
 
   try {
     const { _id } = await Category.create({ name: category });
-  
+
     await User.findOneAndUpdate(
       { name: user_id },
       { choosen_category: _id },
       { upsert: true, new: true }
     )
-  
+
     res.status(200).json({ result });
   } catch (error) {
     console.log(error);
@@ -99,9 +99,9 @@ router.delete('/:user_id/writing', authorization, async (req, res) => {
   res.status(200).json({ success: true });
 });
 
-router.get('/:user_id/writing/book-search/:search_word', async (req, res) => {
+router.get('/:user_id/writing/book-search/:search_word', authorization, async (req, res) => {
   const { search_word } = req.params;
-  
+
   try {
     const bookInfo = await axios.get('https://openapi.naver.com/v1/search/book.json',{
       headers: {
@@ -119,26 +119,30 @@ router.get('/:user_id/writing/book-search/:search_word', async (req, res) => {
   }
 })
 
-router.get('/:user_id/writing/isbn-search/:isbn', async (req, res) => {
+router.get('/:user_id/writing/isbn-search/:isbn', authorization, async (req, res) => {
   const { isbn } = req.params;
   const isbn13 = isbn.slice(11,24);
-  const bookData = await axios.get(process.env.NATIONAL_LIBRARY_OF_KOREA_URL + isbn13);
-  const isbnCategoryCode = Number(bookData.data.docs[0].EA_ADD_CODE.slice(2, 3));
+  try {
+    const bookData = await axios.get(process.env.NATIONAL_LIBRARY_OF_KOREA_URL + isbn13);
+    const isbnCategoryCode = Number(bookData.data.docs[0].EA_ADD_CODE.slice(2, 3));
 
-  res.status(200).json({ result: KDC[isbnCategoryCode] });
+    res.status(200).json({ result: KDC[isbnCategoryCode] });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
 });
 
-router.post('/:user_id/book-report', async (req, res) => {
-  const { selectedBook, selectedCategory, imageUrl, text, title, quote  } = req.body.data;
-  const { user_id } = req.params;
-  const { _id } = await User.findOne({ name: user_id }, '_id');
- 
+router.post('/:user_id/book-report', authorization, async (req, res) => {
+  const { email } = res.locals;
+  const { selectedBook, selectedCategory, imageUrl, draftsText, draftsTitle, quote  } = req.body.data;
+  const { _id } = await User.findOne({ email }, '_id');
+
   await BookReport.create({
-    author: _id,
-    image_url: imageUrl,
-    title,
     quote,
-    text,
+    author: _id,
+    text: draftsText,
+    title: draftsTitle,
+    image_url: imageUrl,
     book_info: {
       title: selectedBook.title,
       author: selectedBook.author,
@@ -148,6 +152,26 @@ router.post('/:user_id/book-report', async (req, res) => {
   res.status(200).json({ result: 'ok' });
 });
 
+router.put('/:user_id/book-report', authorization, async (req, res) => {
+  const { selectedBook, selectedCategory, imageUrl, draftsText, draftsTitle, quote, reportId } = req.body.data;
+
+  await BookReport.findOneAndUpdate(
+    { _id: reportId },
+    {
+      quote,
+      text: draftsText,
+      title: draftsTitle,
+      image_url: imageUrl,
+      book_info: {
+        title: selectedBook.title,
+        author: selectedBook.author,
+        category: selectedCategory
+      }
+    },
+    { upsert: true, new: true }
+  );
+  res.status(200).json({ result: 'ok' });
+})
 
 router.get('/:user_id/book-reports', authorization, async (req, res) => {
   const { email } = res.locals;
