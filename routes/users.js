@@ -146,6 +146,9 @@ router.post('/:user_id/book-report', authorization, async (req, res) => {
     book_info: {
       title: selectedBook.title,
       author: selectedBook.author,
+      link: selectedBook.link,
+      image: selectedBook.image,
+      publisher: selectedBook.publisher,
       category: selectedCategory
     }
   });
@@ -165,6 +168,8 @@ router.put('/:user_id/book-report', authorization, async (req, res) => {
       book_info: {
         title: selectedBook.title,
         author: selectedBook.author,
+        image: selectedBook.image,
+        publisher: selectedBook.publisher,
         category: selectedCategory
       }
     },
@@ -176,7 +181,7 @@ router.put('/:user_id/book-report', authorization, async (req, res) => {
 router.get('/:user_id/book-reports', authorization, async (req, res) => {
   const { email } = res.locals;
 
-  const allBookReports = await BookReport.find({});
+  const allBookReports = await BookReport.find({}).populate('author');
   const { choosen_category } = await User.findOne({ email },'choosen_category');
   const userSelectedCategory = await Category.find({ _id: choosen_category[0] });
 

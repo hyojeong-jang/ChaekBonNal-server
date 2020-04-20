@@ -20,7 +20,13 @@ const bookReportSchema = mongoose.Schema({
         category: {
             type: String,
             required: true
-        }
+        },
+        publisher: {
+            type: String,
+            required: true
+        },
+        link: String,
+        image: String
     },
     title: {
         type: String,

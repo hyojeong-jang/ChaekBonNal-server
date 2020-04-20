@@ -60,7 +60,7 @@ router.post('/:report_id/users/:user_id/comment', authorization, async (req, res
     const comments = await Comment.create({
         text: comment,
         author: author._id,
-        date: Date.now().toString()
+        date: Date()
     });
 
     const bookReport = await BookReport.findByIdAndUpdate(

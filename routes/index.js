@@ -27,7 +27,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/non-member/book-reports', async (req, res) => {
-    const bookReports = await BookReport.find();
+    const bookReports = await BookReport.find().populate('author');
     res.status(200).json({ bookReports });
 });
 
